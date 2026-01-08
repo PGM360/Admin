@@ -6,24 +6,46 @@
     <title>PMG - Admin Panel</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <style>
         :root { --p: #6366f1; --bg: #0b0e14; --c: #161b22; --t: #e6edf3; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--t); margin: 0; padding: 15px; }
-        .container { max-width: 450px; margin: auto; background: var(--c); padding: 30px; border-radius: 15px; position: relative; border: 1px solid #30363d; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--t); margin: 0; padding: 15px; }
+        .container { max-width: 450px; margin: auto; background: var(--c); padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         h1 { text-align: center; color: var(--p); font-size: 24px; margin-bottom: 5px; }
         .tagline { text-align: center; font-size: 10px; color: #8b949e; margin-bottom: 25px; letter-spacing: 1px; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        /* Input Styles */
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: white; box-sizing: border-box; font-size: 14px; }
+        
+        /* Login Pin Box Fix (Diamonds Hatane ke liye) */
+        #admin-pin { 
+            text-align: center; 
+            font-size: 24px; 
+            letter-spacing: 12px; 
+            font-family: Arial, sans-serif; /* Standard font taaki dots sahi dikhen */
+            border: 2px solid #30363d;
+        }
+        #admin-pin::placeholder { letter-spacing: normal; font-size: 14px; color: #484f58; }
+
+        button { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
+        
         .hidden { display: none; }
+        
+        /* Card & List Styles */
         .card { background: #0d1117; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #30363d; }
-        .label { font-size: 10px; color: #8b949e; font-weight: bold; }
-        .val { font-size: 14px; margin-bottom: 8px; color: #c9d1d9; border-bottom: 1px solid #21262d; }
-        footer { text-align: center; margin-top: 30px; font-size: 12px; color: #8b949e; border-top: 1px solid #30363d; padding-top: 15px; }
-        .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 10px; float: right; }
+        .label { font-size: 10px; color: #8b949e; font-weight: bold; margin-top: 5px; text-transform: uppercase; }
+        .val { font-size: 14px; margin-bottom: 8px; color: #c9d1d9; border-bottom: 1px solid #21262d; padding-bottom: 2px; }
+        
+        .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 10px; float: right; font-weight: bold; }
         .sold-yes { background: #238636; color: white; }
         .sold-no { background: #da3633; color: white; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        footer { text-align: center; margin-top: 30px; font-size: 12px; color: #8b949e; border-top: 1px solid #30363d; padding-top: 15px; }
+        
+        .login-box { background: #1c2128; padding: 25px; border-radius: 12px; border: 1px solid #30363d; text-align: center; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -33,10 +55,15 @@
         <div class="tagline">MULTI-DEVICE CLOUD ADMIN</div>
 
         <div id="login-sec">
-            <p style="text-align:center">Enter Access Pin</p>
-            <input type="password" id="admin-pin" placeholder="••••">
-            <button onclick="checkPin()">Login</button>
-            <p id="sync-status" style="font-size: 9px; text-align: center; color: #8b949e;">Syncing Pin...</p>
+            <div class="login-box">
+                <p style="margin-bottom: 15px; font-weight: 500; color: #8b949e;">Admin Authentication</p>
+                <input type="password" id="admin-pin" placeholder="ENTER PIN" inputmode="numeric" maxlength="4">
+                <button onclick="checkPin()">UNLOCK SYSTEM</button>
+                <div id="sync-status" style="font-size: 10px; margin-top: 15px; color: #8b949e; display: flex; align-items: center; justify-content: center;">
+                    <span id="status-dot" class="dot" style="background: #f1c40f;"></span>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
         </div>
 
         <div id="menu-sec" class="hidden">
@@ -48,7 +75,6 @@
 
         <div id="settings-sec" class="hidden">
             <h3>Change Access Pin</h3>
-            <p style="font-size: 12px; color: #8b949e;">This will change Pin for ALL devices.</p>
             <input type="password" id="old-pin-input" placeholder="Current Pin">
             <input type="password" id="new-pin-input" placeholder="New Pin">
             <button onclick="updatePinDirectly()">Update Pin</button>
@@ -56,33 +82,40 @@
         </div>
 
         <div id="save-sec" class="hidden">
-            <h3 id="ftitle">New Entry</h3>
+            <h3 id="form-title">New Entry</h3>
             <form id="recordForm" onsubmit="saveData(event)">
                 <input type="hidden" id="edit-id">
                 <input type="date" id="record-date">
                 <input type="text" id="channel" placeholder="Channel Name" required>
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="text" id="pass" placeholder="Password" required>
-                <textarea id="tfa" placeholder="2FA Recovery Codes"></textarea>
+                <textarea id="tfa" placeholder="2FA / Recovery Codes" rows="3"></textarea>
                 <select id="sold-status">
                     <option value="No">Available</option>
                     <option value="Yes">Sold</option>
                 </select>
-                <button type="submit">Save Record</button>
+                <button type="submit" id="save-btn" style="background: #238636;">Save Record</button>
             </form>
             <button style="background:#30363d" onclick="showSection('menu-sec')">Cancel</button>
         </div>
 
+        <div id="details-sec" class="hidden">
+            <h3>Account Details</h3>
+            <div id="details-content" style="background: #0d1117; padding: 15px; border-radius: 10px; border: 1px dashed #30363d;"></div>
+            <button style="background:#30363d; margin-top: 15px;" onclick="showSection('view-sec')">Back to List</button>
+        </div>
+
         <div id="view-sec" class="hidden">
-            <h3>Records</h3>
+            <h3>Database Records</h3>
             <div id="data-list">Loading...</div>
-            <button style="background:#30363d" onclick="showSection('menu-sec')">Back</button>
+            <button style="background:#30363d; margin-top:20px;" onclick="showSection('menu-sec')">Back to Main Menu</button>
         </div>
 
         <footer>Developed by: <b>Muhammad Somail</b></footer>
     </div>
 
     <script>
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBjsL3MctjTO56QFy5zp2wdRNwdbS-YcE",
             authDomain: "pmgdatabase-d597f.firebaseapp.com",
@@ -95,19 +128,19 @@
         const db = firebase.firestore();
 
         let cloudPin = "1234";
+        let allRecords = {}; 
 
-        // Real-time Pin Sync from Firebase
+        // Pin Sync
         db.collection("settings").doc("admin_config").onSnapshot((doc) => {
             if (doc.exists) {
                 cloudPin = doc.data().pin;
-                document.getElementById('sync-status').innerText = "Cloud Synced ✅";
-            } else {
-                db.collection("settings").doc("admin_config").set({ pin: "1234" });
+                document.getElementById('status-dot').style.background = "#238636";
+                document.getElementById('status-text').innerText = "System Ready ✅";
             }
         });
 
         function showSection(id) {
-            ['login-sec','menu-sec','save-sec','view-sec', 'settings-sec'].forEach(s => {
+            ['login-sec','menu-sec','save-sec','view-sec', 'settings-sec', 'details-sec'].forEach(s => {
                 document.getElementById(s).classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
@@ -118,22 +151,8 @@
                 showSection('menu-sec');
             } else {
                 alert("Incorrect Pin!");
+                document.getElementById('admin-pin').value = "";
             }
-        }
-
-        function updatePinDirectly() {
-            const oldP = document.getElementById('old-pin-input').value;
-            const newP = document.getElementById('new-pin-input').value;
-
-            if(oldP === cloudPin) {
-                if(newP.length > 0) {
-                    db.collection("settings").doc("admin_config").update({ pin: newP })
-                    .then(() => {
-                        alert("Pin Updated for all devices!");
-                        location.reload();
-                    });
-                } else { alert("Enter valid new pin"); }
-            } else { alert("Old Pin is incorrect!"); }
         }
 
         function saveData(e) {
@@ -146,53 +165,76 @@
                 pass: document.getElementById('pass').value,
                 tfa: document.getElementById('tfa').value,
                 sold: document.getElementById('sold-status').value,
-                updated: new Date().toLocaleString()
+                updated: new Date().getTime()
             };
             const ref = db.collection("accounts");
-            const action = id ? ref.doc(id).update(data) : ref.add(data);
-            action.then(() => {
-                alert("Success!");
-                showSection('menu-sec');
-            });
+            const promise = id ? ref.doc(id).update(data) : ref.add(data);
+            promise.then(() => { alert("Saved!"); loadData(); });
         }
 
         function loadData() {
             showSection('view-sec');
-            db.collection("accounts").onSnapshot(snap => {
+            db.collection("accounts").orderBy("updated", "desc").onSnapshot(snap => {
                 let h = "";
+                allRecords = {};
                 snap.forEach(doc => {
                     const d = doc.data();
+                    allRecords[doc.id] = d;
                     const sClass = d.sold === 'Yes' ? 'sold-yes' : 'sold-no';
                     h += `<div class="card">
                         <span class="status-pill ${sClass}">${d.sold === 'Yes' ? 'SOLD' : 'AVAILABLE'}</span>
-                        <div class="label">Date: ${d.date || 'N/A'}</div>
-                        <div class="val"><b>${d.channel}</b></div>
-                        <div class="val">${d.email}</div>
-                        <button style="padding:5px; width:48%;" onclick="edit('${doc.id}','${d.date}','${d.channel}','${d.email}','${d.pass}','${d.tfa}','${d.sold}')">Edit</button>
-                        <button style="padding:5px; width:48%; background:#da3633" onclick="del('${doc.id}')">Delete</button>
+                        <div class="label">Channel:</div><div class="val"><b>${d.channel}</b></div>
+                        <div class="label">Email:</div><div class="val">${d.email}</div>
+                        <button style="background:#6366f1; font-size:11px; padding:6px;" onclick="viewRecord('${doc.id}')">👁️ View Password</button>
+                        <div class="btn-grid">
+                            <button style="background:#238636; padding:8px;" onclick="editRecord('${doc.id}')">✏️ Edit</button>
+                            <button style="background:#da3633; padding:8px;" onclick="deleteRecord('${doc.id}')">🗑️ Delete</button>
+                        </div>
                     </div>`;
                 });
-                document.getElementById('data-list').innerHTML = h || "Empty.";
+                document.getElementById('data-list').innerHTML = h || "No records.";
             });
         }
 
-        function addNewRecord() {
-            document.getElementById('recordForm').reset();
-            document.getElementById('edit-id').value = "";
+        function viewRecord(id) {
+            const d = allRecords[id];
+            document.getElementById('details-content').innerHTML = `
+                <div class="label">Channel:</div><div class="val">${d.channel}</div>
+                <div class="label">Email:</div><div class="val">${d.email}</div>
+                <div class="label">Password:</div><div class="val" style="color:#f87171; font-family:monospace;">${d.pass}</div>
+                <div class="label">2FA Codes:</div><div class="val" style="white-space:pre-wrap;">${d.tfa || 'None'}</div>
+            `;
+            showSection('details-sec');
+        }
+
+        function editRecord(id) {
+            const d = allRecords[id];
+            document.getElementById('edit-id').value = id;
+            document.getElementById('record-date').value = d.date;
+            document.getElementById('channel').value = d.channel;
+            document.getElementById('email').value = d.email;
+            document.getElementById('pass').value = d.pass;
+            document.getElementById('tfa').value = d.tfa;
+            document.getElementById('sold-status').value = d.sold;
+            document.getElementById('form-title').innerText = "Edit Record";
             showSection('save-sec');
         }
 
-        function del(id) { if(confirm("Delete permanently?")) db.collection("accounts").doc(id).delete(); }
-
-        function edit(id, date, c, e, p, t, sold) {
-            document.getElementById('edit-id').value = id;
-            document.getElementById('record-date').value = date;
-            document.getElementById('channel').value = c;
-            document.getElementById('email').value = e;
-            document.getElementById('pass').value = p;
-            document.getElementById('tfa').value = t;
-            document.getElementById('sold-status').value = sold;
+        function deleteRecord(id) { if(confirm("Delete?")) db.collection("accounts").doc(id).delete(); }
+        
+        function addNewRecord() {
+            document.getElementById('recordForm').reset();
+            document.getElementById('edit-id').value = "";
+            document.getElementById('form-title').innerText = "New Entry";
             showSection('save-sec');
+        }
+
+        function updatePinDirectly() {
+            const oldP = document.getElementById('old-pin-input').value;
+            const newP = document.getElementById('new-pin-input').value;
+            if(oldP === cloudPin) {
+                db.collection("settings").doc("admin_config").update({ pin: newP }).then(() => location.reload());
+            } else { alert("Old pin wrong"); }
         }
     </script>
 </body>
